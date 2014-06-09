@@ -7,28 +7,36 @@
   tasks:
   - name: make sure we can connect
     action: ping
-  # Install apache, php, mysql, git
+  # Install nginx, php, mysql, git
   - name: apt-get update
     apt: update_cache=yes
-  - name: install apache
-    apt: pkg=apache2 state=installed
-  - name: install php5
-    apt: pkg=php5 state=installed
+  - name: Install PHP
+    apt: pkg={{item}} state=installed
+    with_items:
+      - php5-cli
+      - php5-dev
+      - php5-mysql
+      - php5-json
   - name: install mysql-server
     apt: pkg=mysql-server state=installed
   - name: install git
     apt: pkg=git state=installed
   - name: install vim
     apt: pkg=vim state=installed
-  # Create a vhost
-  - name: create vhost
-    template: src=templates/apache/example.conf dest=/etc/apache2/sites-enabled
+  - name: install nginx
+    apt: pkg=nginx state=installed
+
+  # Modify nginx configs
+  - name: modify nginx conf
+    template: src=templates/nginx/nginx.conf dest=/etc/nginx/nginx.conf owner=vagrant group=vagrant
     notify:
-      - restart apache
-  # Clone a repo
-  - name: clone repo
-    git: repo=https://github.com/mheap/demo.git dest=/var/www/demo
+      - restart nginx
+  - name: create wp-blog vhost
+    template: src=templates/nginx/wp-blog.conf dest=/etc/nginx/sites-available/wp-blog.conf owner=vagrant group=vagrant
+    notify:
+      - restart nginx
+
   # Notification handlers
   handlers:
-    - name: restart apache
-      service: name=apache2 state=restarted
+    - name: restart nginx
+      service: name=nginx state=restarted
